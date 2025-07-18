@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 from aiogram import Bot
@@ -94,6 +95,37 @@ async def save_user_files(
         logger.info(f"Сохранено {len(saved_files)} файлов для пользователя {user_id}")
 
     return saved_files
+
+
+async def clear_user_files(user_id: int) -> int:
+    """
+    Удаляет все файлы пользователя.
+
+    Args:
+        user_id: ID пользователя
+
+    Returns:
+        Количество удаленных файлов
+    """
+    user_dir = Path(settings.FILES_DIR) / str(user_id)
+
+    if not user_dir.exists():
+        logger.debug(f"Директория пользователя {user_id} не существует")
+        return 0
+
+    try:
+        # Подсчитываем количество файлов перед удалением
+        files_count = sum(1 for file in user_dir.rglob("*") if file.is_file())
+
+        # Удаляем всю директорию пользователя
+        shutil.rmtree(user_dir)
+
+        logger.info(f"Удалено {files_count} файлов для пользователя {user_id}")
+        return files_count
+
+    except Exception as e:
+        logger.error(f"Ошибка при удалении файлов пользователя {user_id}: {e}")
+        return 0
 
 
 async def _save_document(
