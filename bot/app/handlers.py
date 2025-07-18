@@ -199,9 +199,4 @@ async def message_handler(message: Message, bot: Bot) -> None:
 
     if saved_files:
         files_count = len(saved_files)
-        response_text = f"✅ Сохранено файлов: {files_count}"
         logger.info(f"Сохранено {files_count} файлов для пользователя {user_id}")
-    else:
-        response_text = "📝 Сообщение получено, но файлов для сохранения не найдено."
-
-    await message.answer(response_text)
