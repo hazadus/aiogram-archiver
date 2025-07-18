@@ -20,3 +20,7 @@ lint:
     @echo "🔍 Проверка кода с помощью mypy..."
     cd bot && uv run mypy app
     @echo "✅ Код проверен"
+
+# Сгенерировать сообщение коммита (см. https://github.com/hazadus/gh-commitmsg)
+commitmsg:
+    gh commitmsg --language russian --examples

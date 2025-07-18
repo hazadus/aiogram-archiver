@@ -11,6 +11,7 @@ services:
     command: ["uv", "run", "./app/main.py"]
     volumes:
       - ./bot/app/:/app/app/
+      - ./files/:/app/files/
 
   # MARK: DEV
   bot-dev:
@@ -24,3 +25,4 @@ services:
     command: ["uv", "run", "./app/main.py"]
     volumes:
       - ./bot/app/:/app/app/
+      - ./files/:/app/files/

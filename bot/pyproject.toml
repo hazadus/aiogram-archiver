@@ -1,7 +1,7 @@
 [project]
 name = "aiogram-archiver"
 version = "0.1.0"
-description = "Add your description here"
+description = "Телеграм-бот для накопления и архивации файлов"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
