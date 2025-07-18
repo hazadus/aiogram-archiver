@@ -1,7 +1,7 @@
 services:
   # MARK: PROD
-  bot:
-    container_name: bot
+  archiver-bot:
+    container_name: archiver-bot
     profiles: ["prod"]
     build:
       context: ./bot
