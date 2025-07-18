@@ -1,0 +1,26 @@
+services:
+  # MARK: PROD
+  bot:
+    container_name: bot
+    profiles: ["prod"]
+    build:
+      context: ./bot
+      args:
+        ENV: prod
+    env_file: "./bot/.env"
+    command: ["uv", "run", "./app/main.py"]
+    volumes:
+      - ./bot/app/:/app/app/
+
+  # MARK: DEV
+  bot-dev:
+    container_name: bot-dev
+    profiles: ["dev"]
+    build:
+      context: ./bot
+      args:
+        ENV: dev
+    env_file: "./bot/.env"
+    command: ["uv", "run", "./app/main.py"]
+    volumes:
+      - ./bot/app/:/app/app/
