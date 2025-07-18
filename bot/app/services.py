@@ -1,4 +1,6 @@
 import shutil
+import tempfile
+import zipfile
 from pathlib import Path
 
 from aiogram import Bot
@@ -371,4 +373,53 @@ async def _save_sticker(
 
     except Exception as e:
         logger.error(f"Ошибка при сохранении стикера: {e}")
+        return None
+
+
+async def create_user_archive(user_id: int) -> str | None:
+    """
+    Создаёт zip-архив со всеми файлами пользователя.
+
+    Args:
+        user_id: ID пользователя
+
+    Returns:
+        Путь к созданному архиву или None, если файлов нет или произошла ошибка
+    """
+    user_dir = Path(settings.FILES_DIR) / str(user_id)
+
+    if not user_dir.exists():
+        logger.debug(f"Директория пользователя {user_id} не существует")
+        return None
+
+    # Находим все файлы пользователя
+    user_files = list(user_dir.rglob("*"))
+    user_files = [f for f in user_files if f.is_file()]
+
+    if not user_files:
+        logger.debug(f"У пользователя {user_id} нет сохранённых файлов")
+        return None
+
+    try:
+        # Создаём временный файл для архива
+        temp_archive = tempfile.NamedTemporaryFile(
+            delete=False, suffix=".zip", prefix=f"user_{user_id}_"
+        )
+        archive_path = temp_archive.name
+        temp_archive.close()
+
+        # Создаём zip-архив
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for file_path in user_files:
+                # Добавляем файл в архив с относительным путём
+                arcname = file_path.relative_to(user_dir)
+                zip_file.write(file_path, arcname)
+
+        logger.info(
+            f"Создан архив {archive_path} с {len(user_files)} файлами для пользователя {user_id}"
+        )
+        return archive_path
+
+    except Exception as e:
+        logger.error(f"Ошибка при создании архива для пользователя {user_id}: {e}")
         return None

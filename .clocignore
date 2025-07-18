@@ -1,2 +1,3 @@
 bot/.ruff_cache
+bot/.mypy_cache
 bot/.venv

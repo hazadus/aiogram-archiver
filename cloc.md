@@ -1,12 +1,12 @@
-cloc|github.com/AlDanial/cloc v 2.02  T=0.68 s (8.9 files/s, 187.7 lines/s)
+cloc|github.com/AlDanial/cloc v 2.02  T=0.86 s (9.3 files/s, 1019.1 lines/s)
 --- | ---
 
 Language|files|blank|comment|code
 :-------|-------:|-------:|-------:|-------:
-Python|2|15|1|36
-YAML|1|1|2|23
-TOML|1|1|0|19
+Python|4|136|84|446
+TOML|1|10|5|70
+Markdown|1|20|0|53
+YAML|1|1|2|25
 Dockerfile|1|7|6|12
-Markdown|1|2|0|2
 --------|--------|--------|--------|--------
-SUM:|6|26|9|92
+SUM:|8|174|97|606
