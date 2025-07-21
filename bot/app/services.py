@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 import zipfile
+from datetime import datetime
 from pathlib import Path
 
 from aiogram import Bot
@@ -423,3 +424,111 @@ async def create_user_archive(user_id: int) -> str | None:
     except Exception as e:
         logger.error(f"Ошибка при создании архива для пользователя {user_id}: {e}")
         return None
+
+
+def get_user_files_stats(
+    *,
+    user_id: int,
+) -> dict:
+    """
+    Получает статистику файлов пользователя.
+
+    Args:
+        user_id: ID пользователя
+
+    Returns:
+        Словарь со статистикой файлов
+    """
+    user_dir = Path(settings.FILES_DIR) / str(user_id)
+
+    if not user_dir.exists():
+        logger.debug(f"Директория пользователя {user_id} не существует")
+        return {
+            "total_files": 0,
+            "total_size": 0,
+            "files_by_date": {},
+        }
+
+    try:
+        # Находим все файлы пользователя
+        user_files = list(user_dir.rglob("*"))
+        user_files = [f for f in user_files if f.is_file()]
+
+        if not user_files:
+            logger.debug(f"У пользователя {user_id} нет сохранённых файлов")
+            return {
+                "total_files": 0,
+                "total_size": 0,
+                "files_by_date": {},
+            }
+
+        total_size = 0
+        files_by_date = {}
+
+        for file_path in user_files:
+            try:
+                # Получаем размер файла
+                file_size = file_path.stat().st_size
+                total_size += file_size
+
+                # Получаем дату создания файла
+                file_ctime = datetime.fromtimestamp(file_path.stat().st_ctime)
+                date_key = file_ctime.strftime("%Y-%m-%d")
+
+                if date_key not in files_by_date:
+                    files_by_date[date_key] = {"count": 0, "size": 0}
+
+                files_by_date[date_key]["count"] += 1
+                files_by_date[date_key]["size"] += file_size
+
+            except Exception as e:
+                logger.error(f"Ошибка при обработке файла {file_path}: {e}")
+                continue
+
+        # Сортируем даты по убыванию
+        files_by_date = dict(sorted(files_by_date.items(), reverse=True))
+
+        stats = {
+            "total_files": len(user_files),
+            "total_size": total_size,
+            "files_by_date": files_by_date,
+        }
+
+        logger.debug(f"Получена статистика для пользователя {user_id}: {stats}")
+        return stats
+
+    except Exception as e:
+        logger.error(f"Ошибка при получении статистики для пользователя {user_id}: {e}")
+        return {
+            "total_files": 0,
+            "total_size": 0,
+            "files_by_date": {},
+        }
+
+
+def format_file_size(size_bytes: int) -> str:
+    """
+    Форматирует размер файла в читаемый вид.
+
+    Args:
+        size_bytes: Размер в байтах
+
+    Returns:
+        Отформатированный размер (например, "1.5 Мб", "2.3 Гб")
+    """
+    if size_bytes == 0:
+        return "0 Б"
+
+    # Константы для конвертации
+    KB = 1024
+    MB = KB * 1024
+    GB = MB * 1024
+
+    if size_bytes < KB:
+        return f"{size_bytes} Б"
+    elif size_bytes < MB:
+        return f"{size_bytes / KB:.1f} Кб"
+    elif size_bytes < GB:
+        return f"{size_bytes / MB:.1f} Мб"
+    else:
+        return f"{size_bytes / GB:.1f} Гб"

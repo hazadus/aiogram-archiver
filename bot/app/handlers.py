@@ -5,7 +5,13 @@ from aiogram import Bot, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import BufferedInputFile, Message
 from loguru import logger
-from services import clear_user_files, create_user_archive, save_user_files
+from services import (
+    clear_user_files,
+    create_user_archive,
+    format_file_size,
+    get_user_files_stats,
+    save_user_files,
+)
 
 router = Router()
 
@@ -163,15 +169,60 @@ async def help_command_handler(message: Message) -> None:
         "📋 **Доступные команды:**\n\n"
         "/start - Запустить бота и получить приветствие\n"
         "/help - Показать это сообщение с описанием команд\n"
+        "/stats - Показать статистику по сохранённым файлам\n"
         "/archive - Создать и получить zip-архив со всеми вашими файлами\n"
         "/clear - Удалить все ваши сохранённые файлы\n\n"
         "📁 **Работа с файлами:**\n"
         "• Отправьте любой файл, фото, видео, аудио, документ или стикер - бот автоматически сохранит его\n"
+        "• Используйте /stats для просмотра статистики файлов\n"
         "• Используйте /archive для получения архива с вашими файлами\n"
         "• Используйте /clear для удаления всех сохранённых файлов"
     )
 
     await message.answer(help_text, parse_mode="Markdown")
+
+
+# MARK: Stats
+@router.message(Command("stats"))
+async def stats_command_handler(message: Message) -> None:
+    """
+    Обработчик команды /stats.
+
+    Отправляет пользователю статистику по сохраненным файлам.
+    """
+    if message.from_user is None:
+        logger.error("Получено сообщение без данных пользователя")
+        return
+
+    user_id = message.from_user.id
+    username = (
+        message.from_user.username or message.from_user.first_name or "Пользователь"
+    )
+
+    logger.debug(f"Получена команда /stats от пользователя {user_id} (@{username})")
+
+    # Получаем статистику файлов
+    stats = get_user_files_stats(user_id=user_id)
+
+    if stats["total_files"] == 0:
+        await message.answer("📁 У вас нет сохранённых файлов.")
+        return
+
+    # Формируем общую статистику
+    total_size_formatted = format_file_size(stats["total_size"])
+    stats_text = (
+        f"📊 **Статистика ваших файлов:**\n\n"
+        f"📁 Всего файлов: {stats['total_files']}\n"
+        f"💾 Общий объём: {total_size_formatted}\n\n"
+        f"📅 **По датам:**\n"
+    )
+
+    # Добавляем статистику по датам
+    for date, date_stats in stats["files_by_date"].items():
+        date_size_formatted = format_file_size(date_stats["size"])
+        stats_text += f"• {date}: {date_stats['count']} файлов, {date_size_formatted}\n"
+
+    await message.answer(stats_text, parse_mode="Markdown")
 
 
 # MARK: Any Message
