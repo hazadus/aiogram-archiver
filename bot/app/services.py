@@ -426,6 +426,80 @@ async def create_user_archive(user_id: int) -> str | None:
         return None
 
 
+async def create_user_archive_by_date(
+    *,
+    user_id: int,
+    target_date: str,
+) -> str | None:
+    """
+    Создаёт zip-архив с файлами пользователя за указанную дату.
+
+    Args:
+        user_id: ID пользователя
+        target_date: Дата в формате YYYY-MM-DD
+
+    Returns:
+        Путь к созданному архиву или None, если файлов нет или произошла ошибка
+    """
+    user_dir = Path(settings.FILES_DIR) / str(user_id)
+
+    if not user_dir.exists():
+        logger.debug(f"Директория пользователя {user_id} не существует")
+        return None
+
+    # Находим все файлы пользователя
+    user_files = list(user_dir.rglob("*"))
+    user_files = [f for f in user_files if f.is_file()]
+
+    if not user_files:
+        logger.debug(f"У пользователя {user_id} нет сохранённых файлов")
+        return None
+
+    # Фильтруем файлы по дате
+    files_for_date = []
+    for file_path in user_files:
+        try:
+            # Получаем дату создания файла
+            file_ctime = datetime.fromtimestamp(file_path.stat().st_ctime)
+            file_date = file_ctime.strftime("%Y-%m-%d")
+
+            if file_date == target_date:
+                files_for_date.append(file_path)
+        except Exception as e:
+            logger.error(f"Ошибка при обработке файла {file_path}: {e}")
+            continue
+
+    if not files_for_date:
+        logger.debug(f"У пользователя {user_id} нет файлов за дату {target_date}")
+        return None
+
+    try:
+        # Создаём временный файл для архива
+        temp_archive = tempfile.NamedTemporaryFile(
+            delete=False, suffix=".zip", prefix=f"user_{user_id}_{target_date}_"
+        )
+        archive_path = temp_archive.name
+        temp_archive.close()
+
+        # Создаём zip-архив
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for file_path in files_for_date:
+                # Добавляем файл в архив с относительным путём
+                arcname = file_path.relative_to(user_dir)
+                zip_file.write(file_path, arcname)
+
+        logger.info(
+            f"Создан архив {archive_path} с {len(files_for_date)} файлами за {target_date} для пользователя {user_id}"
+        )
+        return archive_path
+
+    except Exception as e:
+        logger.error(
+            f"Ошибка при создании архива за {target_date} для пользователя {user_id}: {e}"
+        )
+        return None
+
+
 def get_user_files_stats(
     *,
     user_id: int,
